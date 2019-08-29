@@ -100,10 +100,18 @@ class TabBar: UITabBar {
     
     private weak var stackView: UIStackView!
     
-    private var _items: [UITabBarItem]?
+    private var topItemsStackView: UIStackView!
+    private var bottomItemsStackView: UIStackView!
+    
+    private var _topItems: [UITabBarItem]?
+    private var _bottomItems: [UITabBarItem]?
     
     override var items: [UITabBarItem]? {
-        get { return _items }
+        get {
+            var items = _topItems ?? []
+            items.append(contentsOf: _bottomItems ?? [])
+            return items
+        }
         set { self.setItems(newValue, animated: false) }
     }
     
@@ -155,10 +163,30 @@ class TabBar: UITabBar {
         ])
         
         self.stackView = stackView
+        
+        let topItemsStackView = UIStackView()
+        topItemsStackView.axis = .vertical
+        
+        let bottomItemsStackView = UIStackView()
+        bottomItemsStackView.axis = .vertical
+        
+        self.stackView.addArrangedSubview(topItemsStackView)
+        self.stackView.addArrangedSubview(UIView())
+        self.stackView.addArrangedSubview(bottomItemsStackView)
+        
+        self.topItemsStackView = topItemsStackView
+        self.bottomItemsStackView = bottomItemsStackView
     }
     
     override func setItems(_ items: [UITabBarItem]?, animated: Bool) {
-        let buttons = items?.compactMap { TabBarButton(item: $0, tabBar: self, target: self, action: #selector(onTabButtonPressed(_:)))} ?? []
+        self.setItems(items, positioning: .automatic, animated: animated)
+    }
+    
+    func setItems(_ items: [UITabBarItem]?, positioning: ItemPositioning, animated: Bool) {
+        let buttons = items?.compactMap { TabBarButton(item: $0, tabBar: self, target: self, action: #selector(onTabButtonPressed(_:))) } ?? []
+        
+        guard let stackView = positioning == .bottom ? self.bottomItemsStackView : self.topItemsStackView else { return }
+        
         UIView.perform(usingAnimation: animated) {
             for subview in stackView.arrangedSubviews {
                 stackView.removeArrangedSubview(subview)
@@ -168,10 +196,14 @@ class TabBar: UITabBar {
                 button.axis = .vertical
                 stackView.addArrangedSubview(button)
             }
-
-            stackView.addArrangedSubview(UIView())
         }
-        _items = items
+        
+        switch positioning {
+        case .bottom:
+            self._bottomItems = items
+        default:
+            self._topItems = items
+        }
     }
     
     @objc private func onTabButtonPressed(_ button: TabBarButton) {
@@ -202,11 +234,14 @@ extension UIView {
     }
 }
 
-class TabBarViewController: UIViewController {
+open class TabBarViewController: UIViewController {
     
-    private(set) lazy var viewControllers: [UIViewController] = []
+    public var viewControllers: [UIViewController] {
+        return topViewControllers + bottomViewControllers
+    }
     
-    private weak var tabBar: UITabBar?
+    public private(set) weak var tabBar: UITabBar!
+    public private(set) weak var selectedViewController: UIViewController?
     
     private weak var detailContainerView: UIVisualEffectView!
     private weak var mainContainerView: UIView!
@@ -214,18 +249,64 @@ class TabBarViewController: UIViewController {
     
     private weak var detailWidthConstraint: NSLayoutConstraint?
     
+    private lazy var topViewControllers: [UIViewController] = []
+    private lazy var bottomViewControllers: [UIViewController] = []
+    
+    private var isDetailPresented: Bool {
+        return self.detailWidthConstraint?.constant == Constants.detailPresentedWidth
+    }
+    
     private enum Constants {
         static let detailPresentedWidth: CGFloat = 375
         static let detailHiddenWidth: CGFloat = 0
         static let width: CGFloat = 70
     }
     
-    override func viewDidLoad() {
+    open override func viewDidLoad() {
         super.viewDidLoad()
+
+        self.setup()
+        
+        // MARK: - Mock
+        
+        let firstController = TableTestViewController(tabBarItem: UITabBarItem(title: "Some new message", image: #imageLiteral(resourceName: "documents"), tag: 0))
+        let secondController = TestViewController(tabBarItem: UITabBarItem(title: "TestAgain", image: #imageLiteral(resourceName: "finance"), tag: 1))
+        self.setViewControllers([firstController, secondController], positioning: .bottom, animated: false)
+        
+        let firstController1 = TableTestViewController(tabBarItem: UITabBarItem(title: "Some new message", image: #imageLiteral(resourceName: "documents"), tag: 0))
+        let secondController1 = TestViewController(tabBarItem: UITabBarItem(title: "TestAga32234in", image: #imageLiteral(resourceName: "finance"), tag: 1))
+        self.setViewControllers([firstController1, secondController1], positioning: .top, animated: false)
+        
+        let mainController = TestViewController(tabBarItem: UITabBarItem(title: "TestAgain", image: #imageLiteral(resourceName: "finance"), tag: 1))
+        self.showMasterViewController(mainController, sender: nil)
+    }
+    
+    open func setViewControllers(_ viewControllers: [UIViewController]?, positioning: UITabBar.ItemPositioning = .automatic, animated: Bool) {
+        guard let tabBar = self.tabBar as? TabBar else { return }
+        
+        let controllers = viewControllers ?? []
+        
+        switch positioning {
+        case .bottom:
+            self.bottomViewControllers = controllers
+        default:
+            self.topViewControllers = controllers
+        }
+        let tabBarItems = controllers.compactMap { $0.tabBarItem }
+        tabBar.setItems(tabBarItems, positioning: positioning, animated: animated)
+    }
+    
+    open func showMasterViewController(_ vc: UIViewController, sender: Any?) {
+        self.addChildViewController(vc, viewContainer: self.mainContainerView)
+    }
+    
+    // MARK: - Private
+    
+    private func setup() {
         
         let mainContainerView = UIView()
         mainContainerView.translatesAutoresizingMaskIntoConstraints = false
-        mainContainerView.backgroundColor = .red
+        //        mainContainerView.backgroundColor = .red
         view.addSubview(mainContainerView)
         self.mainContainerView = mainContainerView
         
@@ -244,11 +325,12 @@ class TabBarViewController: UIViewController {
         self.overlayView = overlayView
         
         let tabBar = TabBar()
+        tabBar.translatesAutoresizingMaskIntoConstraints = false
+        
         tabBar.onTabSelectedHandler { item in
             self.setVisibleDetailViewController(for: item)
         }
         
-        tabBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tabBar)
         self.tabBar = tabBar
         
@@ -279,35 +361,15 @@ class TabBarViewController: UIViewController {
         self.additionalSafeAreaInsets.left = Constants.width
         
         self.detailWidthConstraint = detailWidthConstraint
-        
-        // MARK: - Mock
-        
-        let firstController = TableTestViewController(tabBarItem: UITabBarItem(title: "Some new message", image: #imageLiteral(resourceName: "documents"), tag: 0))
-        
-        let secondController = TestViewController(tabBarItem: UITabBarItem(title: "TestAgain", image: #imageLiteral(resourceName: "finance"), tag: 1))
-        
-        self.setViewControllers([firstController, secondController], animated: false)
-        
-        let mainController = TableTestViewController(tabBarItem: UITabBarItem(title: "Some new message", image: #imageLiteral(resourceName: "documents"), tag: 0))
-        
-        self.showMasterViewController(mainController, sender: nil)
     }
-    
-    private var isDetailPresented: Bool {
-        return self.detailWidthConstraint?.constant == Constants.detailPresentedWidth
-    }
-    
-    private weak var selectedViewController: UIViewController?
     
     private func setVisibleDetailViewController(for tabBarItem: UITabBarItem?) {
         
-        let animator = UIViewPropertyAnimator(duration: 0.15, timingParameters: UICubicTimingParameters(animationCurve: .easeIn))
+        let animator = UIViewPropertyAnimator(duration: 0.15, timingParameters: UICubicTimingParameters(animationCurve: .easeInOut))
         
         if let item = tabBarItem {
             
             guard let viewControllerToShow = self.viewControllers.first(where: { $0.tabBarItem === item }) else { return }
-            
-            if viewControllerToShow === self.selectedViewController { return }
             
             animator.addAnimations {
                 self.overlayView.alpha = 1
@@ -344,27 +406,20 @@ class TabBarViewController: UIViewController {
 
     }
     
-    func setViewControllers(_ viewControllers: [UIViewController]?, animated: Bool) {
-        self.viewControllers = viewControllers ?? []
-        
-        let tabBarItems = self.viewControllers.compactMap { $0.tabBarItem }
-        self.tabBar?.setItems(tabBarItems, animated: animated)
-    }
-    
-    func showMasterViewController(_ vc: UIViewController, sender: Any?) {
-        self.addChildViewController(vc, viewContainer: self.mainContainerView)
-    }
-    
     @objc private func onOverlayPressed(_ gesture: UITapGestureRecognizer) {
-        self.tabBar?.selectedItem = nil
+        self.tabBar.selectedItem = nil
     }
+}
 
-    
+public extension UITabBar.ItemPositioning {
+    static let top = UITabBar.ItemPositioning(rawValue: 12)!
+    static let bottom = UITabBar.ItemPositioning(rawValue: 13)!
 }
 
 extension UIViewController {
     
     func removeFromParentViewController() {
+        self.willMove(toParent: nil)
         self.removeFromParent()
         self.view.removeFromSuperview()
     }
@@ -380,12 +435,13 @@ extension UIViewController {
     
     /// Adds a child view controller calling viewConfigurator to embed view
     func addChildViewController(_ viewController: UIViewController, viewConfigurator: (UIView) -> Void) {
-        viewController.willMove(toParent: self)
         self.addChild(viewController)
         viewConfigurator(viewController.view)
         viewController.didMove(toParent: self)
     }
 }
+
+// MARK: - Test Controllers
 
 private class TestViewController: UIViewController {
     
