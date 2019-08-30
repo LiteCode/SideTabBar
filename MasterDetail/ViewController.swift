@@ -242,13 +242,19 @@ open class TabBarViewController: UIViewController {
     
     public private(set) weak var tabBar: UITabBar!
     public private(set) weak var selectedViewController: UIViewController?
+    public private(set) weak var mainViewController: UIViewController?
     
+    // MARK: Views
     private weak var detailContainerView: UIVisualEffectView!
     private weak var mainContainerView: UIView!
     private weak var overlayView: UIView!
     
+    // MARK: Constraints
     private weak var detailWidthConstraint: NSLayoutConstraint?
+    private weak var tabBarWidthConstraint: NSLayoutConstraint?
+    private var detailRightConstraint: NSLayoutConstraint!
     
+    // MARK: Other
     private lazy var topViewControllers: [UIViewController] = []
     private lazy var bottomViewControllers: [UIViewController] = []
     
@@ -297,7 +303,9 @@ open class TabBarViewController: UIViewController {
     }
     
     open func showMasterViewController(_ vc: UIViewController, sender: Any?) {
+        self.mainViewController?.removeFromParentViewController()
         self.addChildViewController(vc, viewContainer: self.mainContainerView)
+        self.mainViewController = vc
     }
     
     // MARK: - Private
@@ -306,7 +314,6 @@ open class TabBarViewController: UIViewController {
         
         let mainContainerView = UIView()
         mainContainerView.translatesAutoresizingMaskIntoConstraints = false
-        //        mainContainerView.backgroundColor = .red
         view.addSubview(mainContainerView)
         self.mainContainerView = mainContainerView
         
@@ -331,16 +338,22 @@ open class TabBarViewController: UIViewController {
             self.setVisibleDetailViewController(for: item)
         }
         
+        let screenGesture = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(onLeftEdgeScreenGesture(_:)))
+        screenGesture.edges = .left
+        mainContainerView.addGestureRecognizer(screenGesture)
+        
         view.addSubview(tabBar)
         self.tabBar = tabBar
         
         let detailWidthConstraint = detailContainerView.widthAnchor.constraint(equalToConstant: Constants.detailHiddenWidth)
+        let tabBarWidthConstraint = tabBar.widthAnchor.constraint(equalToConstant: Constants.width)
+        let detailRightConstraint = detailContainerView.rightAnchor.constraint(equalTo: mainContainerView.leftAnchor)
         
         NSLayoutConstraint.activate([
             tabBar.topAnchor.constraint(equalTo: view.topAnchor),
             tabBar.leftAnchor.constraint(equalTo: view.leftAnchor),
             tabBar.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            tabBar.widthAnchor.constraint(equalToConstant: Constants.width),
+            tabBarWidthConstraint,
             
             mainContainerView.leftAnchor.constraint(equalTo: view.leftAnchor),
             mainContainerView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -358,9 +371,36 @@ open class TabBarViewController: UIViewController {
             overlayView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         
-        self.additionalSafeAreaInsets.left = Constants.width
-        
+        self.tabBarWidthConstraint = tabBarWidthConstraint
         self.detailWidthConstraint = detailWidthConstraint
+        self.detailRightConstraint = detailRightConstraint
+        
+        self.updateViewState()
+    }
+    
+    private func updateViewState() {
+        if self.isIphoneHSizeClass {
+            self.additionalSafeAreaInsets.left = 0
+//            self.detailRightConstraint.isActive = true
+        } else {
+            self.additionalSafeAreaInsets.left = Constants.width
+//            self.detailRightConstraint.isActive = false
+        }
+        
+        self.view.layoutIfNeeded()
+    }
+    
+    open override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        self.updateViewState()
+    }
+    
+    private var isIphoneHSizeClass: Bool {
+        return self.traitCollection.horizontalSizeClass == .compact && self.view.frame.width <= Constants.detailPresentedWidth
+    }
+    
+    @objc private func onLeftEdgeScreenGesture(_ gesture: UIScreenEdgePanGestureRecognizer) {
+        guard self.isIphoneHSizeClass else { return }
+        
     }
     
     private func setVisibleDetailViewController(for tabBarItem: UITabBarItem?) {
@@ -416,6 +456,13 @@ public extension UITabBar.ItemPositioning {
     static let bottom = UITabBar.ItemPositioning(rawValue: 13)!
 }
 
+
+public extension UIViewController {
+    var sideTabBarController: TabBarViewController? {
+        return self.parent as? TabBarViewController
+    }
+}
+
 extension UIViewController {
     
     func removeFromParentViewController() {
@@ -441,6 +488,7 @@ extension UIViewController {
     }
 }
 
+
 // MARK: - Test Controllers
 
 private class TestViewController: UIViewController {
@@ -450,6 +498,15 @@ private class TestViewController: UIViewController {
     init(tabBarItem: UITabBarItem) {
         super.init(nibName: nil, bundle: nil)
         self.tabBarItem = tabBarItem
+    }
+    
+    init(name: String) {
+        super.init(nibName: nil, bundle: nil)
+        self.tabBarItem = UITabBarItem(title: name, image: nil, selectedImage: nil)
+    }
+    
+    deinit {
+        print("deinited controller with title:", tabBarItem.title ?? "<WITHOUT TITLE>")
     }
     
     override func viewDidLoad() {
@@ -493,6 +550,11 @@ private class TableTestViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
         cell.backgroundColor = .clear
         cell.textLabel?.text = "Some index \(indexPath.row)"
+    }
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let viewController = TestViewController(name: "Some index \(indexPath.row)")
+        self.sideTabBarController?.showMasterViewController(viewController, sender: nil)
     }
     
     override func viewDidLoad() {
