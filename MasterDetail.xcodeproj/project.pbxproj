@@ -24,6 +24,9 @@
 		EF5DD801230C2AB7004A357D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EF5DD804230C2AB7004A357D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		EF5DD806230C2AB7004A357D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		EFDC8D84231BFA0900920BC8 /* MasterDetail.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MasterDetail.entitlements; sourceTree = "<group>"; };
+		EFDC8D85231C016A00920BC8 /* _UIBlurThroughEffect.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = _UIBlurThroughEffect.h; path = "../../../../../../System/Volumes/Data/Users/vladislavprusakov/Dev/LiteCode-Dev/MasterDetail/MasterDetail/_UIBlurThroughEffect.h"; sourceTree = "<group>"; };
+		EFDC8D86231C023000920BC8 /* MasterDetail-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MasterDetail-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,6 +59,7 @@
 		EF5DD7F7230C2AB5004A357D /* MasterDetail */ = {
 			isa = PBXGroup;
 			children = (
+				EFDC8D84231BFA0900920BC8 /* MasterDetail.entitlements */,
 				EF5DD7F8230C2AB5004A357D /* AppDelegate.swift */,
 				EF5DD7FA230C2AB5004A357D /* SceneDelegate.swift */,
 				EF5DD7FC230C2AB5004A357D /* ViewController.swift */,
@@ -63,6 +67,8 @@
 				EF5DD801230C2AB7004A357D /* Assets.xcassets */,
 				EF5DD803230C2AB7004A357D /* LaunchScreen.storyboard */,
 				EF5DD806230C2AB7004A357D /* Info.plist */,
+				EFDC8D85231C016A00920BC8 /* _UIBlurThroughEffect.h */,
+				EFDC8D86231C023000920BC8 /* MasterDetail-Bridging-Header.h */,
 			);
 			path = MasterDetail;
 			sourceTree = "<group>";
@@ -99,6 +105,7 @@
 				TargetAttributes = {
 					EF5DD7F4230C2AB5004A357D = {
 						CreatedOnToolsVersion = 11.0;
+						LastSwiftMigration = 1100;
 					};
 				};
 			};
@@ -284,7 +291,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = MasterDetail/MasterDetail.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
 				DEVELOPMENT_TEAM = 8PYCRS3EA3;
 				INFOPLIST_FILE = MasterDetail/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -293,6 +303,9 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.litecode.MasterDetail;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MACCATALYST = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "MasterDetail/MasterDetail-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -302,7 +315,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = MasterDetail/MasterDetail.entitlements;
 				CODE_SIGN_STYLE = Automatic;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = YES;
 				DEVELOPMENT_TEAM = 8PYCRS3EA3;
 				INFOPLIST_FILE = MasterDetail/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -311,6 +327,8 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.litecode.MasterDetail;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTS_MACCATALYST = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "MasterDetail/MasterDetail-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
