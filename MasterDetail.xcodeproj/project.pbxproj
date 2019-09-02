@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		EF3E0748231D79B00020CE5E /* TabBarButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF3E0747231D79B00020CE5E /* TabBarButton.swift */; };
+		EF3E074A231D79D10020CE5E /* SideTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF3E0749231D79D10020CE5E /* SideTabBar.swift */; };
+		EF3E074C231D7A030020CE5E /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF3E074B231D7A030020CE5E /* Extensions.swift */; };
 		EF5DD7F9230C2AB5004A357D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF5DD7F8230C2AB5004A357D /* AppDelegate.swift */; };
 		EF5DD7FB230C2AB5004A357D /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF5DD7FA230C2AB5004A357D /* SceneDelegate.swift */; };
 		EF5DD7FD230C2AB5004A357D /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF5DD7FC230C2AB5004A357D /* ViewController.swift */; };
@@ -16,6 +19,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		EF3E0747231D79B00020CE5E /* TabBarButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TabBarButton.swift; path = "../../../../../../System/Volumes/Data/Users/vladislavprusakov/Dev/LiteCode-Dev/MasterDetail/MasterDetail/TabBarButton.swift"; sourceTree = "<group>"; };
+		EF3E0749231D79D10020CE5E /* SideTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SideTabBar.swift; path = "../../../../../../System/Volumes/Data/Users/vladislavprusakov/Dev/LiteCode-Dev/MasterDetail/MasterDetail/SideTabBar.swift"; sourceTree = "<group>"; };
+		EF3E074B231D7A030020CE5E /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Extensions.swift; path = "../../../../../../System/Volumes/Data/Users/vladislavprusakov/Dev/LiteCode-Dev/MasterDetail/MasterDetail/Extensions.swift"; sourceTree = "<group>"; };
 		EF5DD7F5230C2AB5004A357D /* MasterDetail.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MasterDetail.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF5DD7F8230C2AB5004A357D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		EF5DD7FA230C2AB5004A357D /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -69,6 +75,9 @@
 				EF5DD806230C2AB7004A357D /* Info.plist */,
 				EFDC8D85231C016A00920BC8 /* _UIBlurThroughEffect.h */,
 				EFDC8D86231C023000920BC8 /* MasterDetail-Bridging-Header.h */,
+				EF3E0747231D79B00020CE5E /* TabBarButton.swift */,
+				EF3E0749231D79D10020CE5E /* SideTabBar.swift */,
+				EF3E074B231D7A030020CE5E /* Extensions.swift */,
 			);
 			path = MasterDetail;
 			sourceTree = "<group>";
@@ -146,6 +155,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				EF5DD7FD230C2AB5004A357D /* ViewController.swift in Sources */,
+				EF3E074C231D7A030020CE5E /* Extensions.swift in Sources */,
+				EF3E074A231D79D10020CE5E /* SideTabBar.swift in Sources */,
+				EF3E0748231D79B00020CE5E /* TabBarButton.swift in Sources */,
 				EF5DD7F9230C2AB5004A357D /* AppDelegate.swift in Sources */,
 				EF5DD7FB230C2AB5004A357D /* SceneDelegate.swift in Sources */,
 			);
