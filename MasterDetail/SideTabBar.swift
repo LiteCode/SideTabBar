@@ -45,6 +45,15 @@ open class SideTabBar: UIView {
     private var _topItems: [UITabBarItem]?
     private var _bottomItems: [UITabBarItem]?
     
+    private var _topButtons: [TabBarButton]?
+    private var _bottomButtons: [TabBarButton]?
+    
+    private var buttons: [TabBarButton] {
+        var items = _topButtons ?? []
+        items.append(contentsOf: _bottomButtons ?? [])
+        return items
+    }
+    
     open var items: [UITabBarItem]? {
         get {
             var items = _topItems ?? []
@@ -72,7 +81,9 @@ open class SideTabBar: UIView {
         willSet {
             self.selectedHandler?(newValue)
             
-            if newValue == nil {
+            if let value = newValue {
+                self.selectedButton = self.buttons.first { $0.tabBarItem === value }
+            } else {
                 self.selectedButton = nil
             }
         }
@@ -92,6 +103,8 @@ open class SideTabBar: UIView {
         super.init(coder: coder)
         self.setup()
     }
+    
+    var canDeselect = true
     
     private var selectedHandler: ((UITabBarItem?) -> Void)?
     
@@ -166,8 +179,10 @@ open class SideTabBar: UIView {
         
         switch positioning {
         case .bottom:
+            self._bottomButtons = buttons
             self._bottomItems = items
         default:
+            self._topButtons = buttons
             self._topItems = items
         }
     }
@@ -181,11 +196,11 @@ open class SideTabBar: UIView {
         self.delegate?.tabBar(self, didSelect: tabBarItem)
         
         if selectedButton === button {
-            self.selectedItem = nil
-            self.selectedButton = nil
+            if canDeselect {
+                self.selectedItem = nil
+            }
         } else {
             self.selectedItem = button.tabBarItem
-            self.selectedButton = button
         }
     }
     
