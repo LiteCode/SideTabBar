@@ -102,6 +102,9 @@ open class TabBarViewController: UIViewController {
         }
     }
     
+    open private(set) lazy var displayModeButtonItem: UIBarButtonItem = UIBarButtonItem(image:
+        UIImage(systemName: "chevron.left"), style: .done, target: self, action: #selector(onDisplayModeButtonItemPressed(barButtonItem:)))
+    
     // MARK: Views
     private weak var detailContainerView: UIVisualEffectView!
     private weak var contentContainerView: UIView!
@@ -281,7 +284,9 @@ open class TabBarViewController: UIViewController {
             self.additionalSafeAreaInsets.left = self.tabBarWidth
             self.tabBar.canDeselect = true
             
-            switch self.prefferedDisplayMode {
+            let displayMode = self.supportedDisplayMode(from: self.prefferedDisplayMode)
+            self.displayMode = displayMode
+            switch displayMode {
             case .allVisible:
                 if selectedViewController == nil {
                     self.tabBar.selectedItem = viewControllers[self.previousSelectedIndex].tabBarItem
@@ -299,6 +304,25 @@ open class TabBarViewController: UIViewController {
         
         UIView.animate(withDuration: Constants.animationDuration) {
             self.view.layoutIfNeeded()
+        }
+    }
+    
+    private func supportedDisplayMode(from preferredDisplayMode: DisplayMode) -> DisplayMode {
+        if self.isIPhoneHorizontalSizeClass {
+            return .primaryHidden
+        } else {
+            switch preferredDisplayMode {
+            case .allVisible:
+                if self.view.frame.width <= self.primaryWidth {
+                    return .primaryOverlay
+                } else {
+                    return .allVisible
+                }
+            case .primaryOverlay:
+                return .primaryOverlay
+            case .primaryHidden:
+                return .primaryHidden
+            }
         }
     }
     
@@ -455,6 +479,10 @@ open class TabBarViewController: UIViewController {
     @objc private func onOverlayPressed(_ gesture: UITapGestureRecognizer) {
         self.tabBar.selectedItem = nil
     }
+    
+    @objc func onDisplayModeButtonItemPressed(barButtonItem: UIBarButtonItem) {
+        
+    }
 }
 
 extension TabBarViewController: UIAdaptivePresentationControllerDelegate {
@@ -493,7 +521,7 @@ private class TestViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .fastForward, target: self, action: #selector(onDisplayModePressed))
+        self.navigationItem.leftBarButtonItem = self.sideTabBarController?.displayModeButtonItem
         
         let label = UILabel()
         label.text = self.tabBarItem.title

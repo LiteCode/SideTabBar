@@ -14,8 +14,8 @@
             filePath = "MasterDetail/ViewController.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "534"
-            endingLineNumber = "534"
+            startingLineNumber = "562"
+            endingLineNumber = "562"
             landmarkName = "deinit"
             landmarkType = "7">
          </BreakpointContent>
