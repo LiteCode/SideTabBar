@@ -16,15 +16,17 @@ import UIKit
 // 5. Unselect tab if primary modal controller was dismissed [X]
 
 public protocol TabBarViewControllerDelegate: AnyObject {
-    func tabBarController(_ tabBarController: UIViewController, shouldSelect viewController: UIViewController) -> Bool
-    func tabBarController(_ tabBarController: UIViewController, willPresent primaryViewController: UIViewController, presentationStyle: TabBarViewController.PrimaryPresentationStyle)
-    func tabBarController(_ tabBarController: UIViewController, didDismiss primaryViewController: UIViewController)
+    func tabBarController(_ tabBarController: TabBarViewController, shouldSelect viewController: UIViewController) -> Bool
+    func tabBarController(_ tabBarController: TabBarViewController, willPresent primaryViewController: UIViewController, presentationStyle: TabBarViewController.PrimaryPresentationStyle)
+    func tabBarController(_ tabBarController: TabBarViewController, didDismiss primaryViewController: UIViewController)
+    
+    func tabBarController(_ tabBarController: TabBarViewController, didUpdateBarButtonItemForDisplayMode: TabBarViewController.DisplayMode) -> UIImage?
 }
 
 public extension TabBarViewControllerDelegate {
-    func tabBarController(_ tabBarController: UIViewController, shouldSelect viewController: UIViewController) -> Bool { return true }
-    func tabBarController(_ tabBarController: UIViewController, willPresent primaryViewController: UIViewController, presentationStyle: TabBarViewController.PrimaryPresentationStyle) { }
-    func tabBarController(_ tabBarController: UIViewController, didDismiss primaryViewController: UIViewController) { }
+    func tabBarController(_ tabBarController: TabBarViewController, shouldSelect viewController: UIViewController) -> Bool { return true }
+    func tabBarController(_ tabBarController: TabBarViewController, willPresent primaryViewController: UIViewController, presentationStyle: TabBarViewController.PrimaryPresentationStyle) { }
+    func tabBarController(_ tabBarController: TabBarViewController, didDismiss primaryViewController: UIViewController) { }
 }
 
 open class TabBarViewController: UIViewController {
@@ -37,6 +39,7 @@ open class TabBarViewController: UIViewController {
     public enum DisplayMode {
         case primaryHidden
         case primaryOverlay
+        case primaryModal
         case allVisible
     }
     
@@ -44,7 +47,11 @@ open class TabBarViewController: UIViewController {
         return topViewControllers + bottomViewControllers
     }
     
-    open private(set) var displayMode: DisplayMode = .primaryOverlay
+    open private(set) var displayMode: DisplayMode = .primaryHidden {
+        didSet {
+            self.updateDisplayModeBarButtonItem()
+        }
+    }
     
     open var prefferedDisplayMode: DisplayMode = .primaryOverlay {
         didSet {
@@ -102,8 +109,9 @@ open class TabBarViewController: UIViewController {
         }
     }
     
-    open private(set) lazy var displayModeButtonItem: UIBarButtonItem = UIBarButtonItem(image:
-        UIImage(systemName: "chevron.left"), style: .done, target: self, action: #selector(onDisplayModeButtonItemPressed(barButtonItem:)))
+    open private(set) lazy var displayModeButtonItem: UIBarButtonItem = {
+        return UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .done, target: self, action: #selector(onDisplayModeButtonItemPressed(barButtonItem:)))
+    }()
     
     // MARK: Views
     private weak var detailContainerView: UIVisualEffectView!
@@ -189,6 +197,7 @@ open class TabBarViewController: UIViewController {
         
         let detailContainerView = UIVisualEffectView()
         
+        // TODO: Remove or change
         #if targetEnvironment(macCatalyst)
         self.backgroundVisualEffect = UIBlurEffect.makeBlurThroughEffect(style: .throughWhileActive)
         #endif
@@ -282,24 +291,21 @@ open class TabBarViewController: UIViewController {
         } else {
             self.setTabBarVisible(true, animated: false)
             self.additionalSafeAreaInsets.left = self.tabBarWidth
-            self.tabBar.canDeselect = true
             
-            let displayMode = self.supportedDisplayMode(from: self.prefferedDisplayMode)
-            self.displayMode = displayMode
+            
+            let displayMode = self.posibleDisplayMode(from: self.prefferedDisplayMode)
+            self.updateDisplayModeBarButtonItem()
+            
             switch displayMode {
             case .allVisible:
-                if selectedViewController == nil {
-                    self.tabBar.selectedItem = viewControllers[self.previousSelectedIndex].tabBarItem
-                }
                 self.tabBar.canDeselect = false
                 self.detailRightConstraint.isActive = true
-            case .primaryHidden:
+            case .primaryHidden, .primaryOverlay, .primaryModal:
+                self.tabBar.canDeselect = true
                 self.detailRightConstraint.isActive = false
-                self.detailWidthConstraint?.constant = (self.selectedViewController == nil) ? Constants.detailHiddenWidth : self.primaryWidth
-            case .primaryOverlay:
-                self.detailRightConstraint.isActive = false
-                self.detailWidthConstraint?.constant = (self.selectedViewController == nil) ? Constants.detailHiddenWidth : self.primaryWidth
             }
+            
+            self.detailWidthConstraint?.constant = (self.selectedViewController == nil) ? Constants.detailHiddenWidth : self.primaryWidth
         }
         
         UIView.animate(withDuration: Constants.animationDuration) {
@@ -307,9 +313,9 @@ open class TabBarViewController: UIViewController {
         }
     }
     
-    private func supportedDisplayMode(from preferredDisplayMode: DisplayMode) -> DisplayMode {
+    private func posibleDisplayMode(from preferredDisplayMode: DisplayMode) -> DisplayMode {
         if self.isIPhoneHorizontalSizeClass {
-            return .primaryHidden
+            return preferredDisplayMode != .primaryHidden ? .primaryModal : .primaryHidden
         } else {
             switch preferredDisplayMode {
             case .allVisible:
@@ -318,10 +324,26 @@ open class TabBarViewController: UIViewController {
                 } else {
                     return .allVisible
                 }
+            default:
+                return preferredDisplayMode
+            }
+        }
+    }
+    
+    private func updateDisplayModeBarButtonItem() {
+        
+        if let delegate = self.delegate, let image = delegate.tabBarController(self, didUpdateBarButtonItemForDisplayMode: self.displayMode) {
+            self.displayModeButtonItem.image = image
+        } else {
+            switch displayMode {
+            case .allVisible:
+                self.displayModeButtonItem.image = UIImage(systemName: "arrow.up.left.and.arrow.down.right")
             case .primaryOverlay:
-                return .primaryOverlay
+                self.displayModeButtonItem.image = UIImage(systemName: "chevron.left")
             case .primaryHidden:
-                return .primaryHidden
+                self.displayModeButtonItem.image = UIImage(systemName: "sidebar.left")
+            case .primaryModal:
+                self.displayModeButtonItem.image = UIImage(systemName: "chevron.left")
             }
         }
     }
@@ -416,62 +438,32 @@ open class TabBarViewController: UIViewController {
     }
     
     private func setVisibleDetailViewController(for tabBarItem: UITabBarItem?) {
-        if self.isIPhoneHorizontalSizeClass {
-            guard let item = tabBarItem else { return }
+        if let item = tabBarItem {
             guard let index = self.viewControllers.firstIndex(where: { $0.tabBarItem === item }) else { return }
             self.previousSelectedIndex = index
             let viewControllerToShow = self.viewControllers[index]
-            self.delegate?.tabBarController(self, willPresent: viewControllerToShow, presentationStyle: .modal)
-            viewControllerToShow.presentationController?.delegate = self
-            self.present(viewControllerToShow, animated: true)
-            self.setTabBarVisible(false, animated: true)
-            self.selectedViewController = viewControllerToShow
-            self.displayMode = .primaryHidden
+            
+            let displayMode = self.posibleDisplayMode(from: self.prefferedDisplayMode)
+            self.showPrimaryViewController(viewControllerToShow, for: displayMode)
         } else {
+            self.view.layoutIfNeeded()
+            self.detailWidthConstraint?.constant = Constants.detailHiddenWidth
+            
             let animator = UIViewPropertyAnimator(duration: Constants.animationDuration, timingParameters: UICubicTimingParameters(animationCurve: .easeInOut))
             
-            if let item = tabBarItem {
-                
-                guard let index = self.viewControllers.firstIndex(where: { $0.tabBarItem === item }) else { return }
-                self.previousSelectedIndex = index
-                let viewControllerToShow = self.viewControllers[index]
-                
-                if self.prefferedDisplayMode == .primaryOverlay || self.prefferedDisplayMode == .primaryHidden {
-                    animator.addAnimations {
-                        self.overlayView.alpha = 1
-                    }
-                }
-                self.selectedViewController?.removeFromParentViewController()
-                self.delegate?.tabBarController(self, willPresent: viewControllerToShow, presentationStyle: .primary)
-                self.addChildViewController(viewControllerToShow, viewContainer: self.detailContainerView.contentView)
-                self.selectedViewController = viewControllerToShow
-                
-                self.view.layoutIfNeeded()
-                self.detailWidthConstraint?.constant = self.primaryWidth
-                
-            } else {
-                self.view.layoutIfNeeded()
-                self.detailWidthConstraint?.constant = self.prefferedDisplayMode == .primaryHidden || self.prefferedDisplayMode == .primaryOverlay ? Constants.detailHiddenWidth : self.primaryWidth
-                
-                animator.addAnimations {
-                    self.overlayView.alpha = 0
-                }
-                
-                if self.prefferedDisplayMode == .primaryHidden || self.prefferedDisplayMode == .primaryOverlay {
-                    animator.addCompletion { state in
-                        if state == .end {
-                            self.displayMode = .primaryHidden
-                            self.selectedViewController?.removeFromParentViewController()
-                            self.selectedViewController = nil
-                        }
-                    }
-                }
-            }
-            
             animator.addAnimations {
+                self.overlayView.alpha = 0
                 self.view.layoutIfNeeded()
             }
             
+            animator.addCompletion { position in
+                if position == .end {
+                    self.selectedViewController?.removeFromParentViewController()
+                    self.selectedViewController = nil
+                    self.displayMode = .primaryHidden
+                }
+            }
+
             animator.startAnimation()
         }
     }
@@ -480,8 +472,81 @@ open class TabBarViewController: UIViewController {
         self.tabBar.selectedItem = nil
     }
     
-    @objc func onDisplayModeButtonItemPressed(barButtonItem: UIBarButtonItem) {
+    private func showPrimaryViewController(_ viewController: UIViewController, for displayMode: DisplayMode) {
         
+        if self.isIPhoneHorizontalSizeClass {
+            self.delegate?.tabBarController(self, willPresent: viewController, presentationStyle: .modal)
+            viewController.presentationController?.delegate = self
+            self.present(viewController, animated: true)
+            self.setTabBarVisible(false, animated: true)
+            self.displayMode = .primaryModal
+        } else {
+            
+            let animator = UIViewPropertyAnimator(duration: Constants.animationDuration, timingParameters: UICubicTimingParameters(animationCurve: .easeInOut))
+            
+            switch displayMode {
+            case .allVisible:
+                self.tabBar.canDeselect = false
+                self.detailRightConstraint.isActive = true
+                self.selectedViewController?.removeFromParentViewController()
+                self.addChildViewController(viewController, viewContainer: self.detailContainerView.contentView)
+                
+                animator.addAnimations {
+                    self.overlayView.alpha = 0
+                }
+                
+                self.delegate?.tabBarController(self, willPresent: viewController, presentationStyle: .primary)
+                self.displayMode = .allVisible
+                self.detailWidthConstraint?.constant = self.primaryWidth
+            case .primaryModal, .primaryOverlay, .primaryHidden:
+                self.tabBar.canDeselect = true
+                self.selectedViewController?.removeFromParentViewController()
+                self.addChildViewController(viewController, viewContainer: self.detailContainerView.contentView)
+                
+                self.detailWidthConstraint?.constant = self.primaryWidth
+                
+                animator.addAnimations {
+                    self.overlayView.alpha = 1
+                }
+                
+                self.displayMode = .primaryOverlay
+                self.delegate?.tabBarController(self, willPresent: viewController, presentationStyle: .primary)
+//            case .primaryHidden:
+//                self.tabBar.canDeselect = true
+//                self.detailRightConstraint.isActive = false
+//
+//                animator.addAnimations {
+//                    self.overlayView.alpha = 0
+//                }
+//
+//                animator.addCompletion { position in
+//                    if position == .end {
+//                        self.selectedViewController?.removeFromParentViewController()
+//                    }
+//                }
+            }
+            
+            animator.addAnimations {
+                self.view.layoutIfNeeded()
+            }
+            
+            animator.startAnimation()
+        }
+        
+        self.selectedViewController = viewController
+    }
+    
+    private func hidePrimaryViewController() {
+        self.displayMode = .primaryHidden
+    }
+    
+    @objc func onDisplayModeButtonItemPressed(barButtonItem: UIBarButtonItem) {
+        if self.displayMode == .primaryHidden || self.selectedViewController == nil {
+            let viewControllerToShow = viewControllers[self.previousSelectedIndex]
+            self.tabBar.selectedItem = viewControllerToShow.tabBarItem
+        } else {
+            self.tabBar.selectedItem = nil
+        }
     }
 }
 
@@ -522,6 +587,7 @@ private class TestViewController: UIViewController {
         super.viewDidLoad()
         
         self.navigationItem.leftBarButtonItem = self.sideTabBarController?.displayModeButtonItem
+        self.sideTabBarController?.prefferedDisplayMode = .primaryModal
         
         let label = UILabel()
         label.text = self.tabBarItem.title
@@ -535,15 +601,6 @@ private class TestViewController: UIViewController {
             label.centerYAnchor.constraint(equalTo: self.view.centerYAnchor),
             label.leftAnchor.constraint(equalTo: self.view.leftAnchor)
         ])
-    }
-    
-    private var isAllVisible: Bool {
-        return self.sideTabBarController?.prefferedDisplayMode == .allVisible
-    }
-    
-    @objc func onDisplayModePressed() {
-        let isAllVisible = self.isAllVisible
-        self.sideTabBarController?.prefferedDisplayMode = isAllVisible ? .primaryHidden : .allVisible
     }
     
     required init?(coder: NSCoder) {
@@ -595,8 +652,7 @@ class SplitTestVC: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.navigationItem.leftBarButtonItem = self.splitViewController?.displayModeButtonItem
-        self.splitViewController?.primaryBackgroundStyle = .sidebar
-        self.splitViewController?.preferredDisplayMode = .primaryOverlay
+        self.splitViewController?.preferredDisplayMode = .allVisible
     }
     
 }
