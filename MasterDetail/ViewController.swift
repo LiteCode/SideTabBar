@@ -10,26 +10,30 @@ import UIKit
 
 // What i should do:
 // 1. Make OverlayView: Blur, background color and touch and close [ ]
-// 2. Make preferredDisplayMode [ ]
+// 2. Make preferredDisplayMode [X]
 // 3. Make handle that primary modal dismissed [X]
 // 4. Make swipable tab bar for iPhone devices [X]
 // 5. Unselect tab if primary modal controller was dismissed [X]
+// 6. Add flow separator for change size between primary and master views
 
-public protocol TabBarViewControllerDelegate: AnyObject {
-    func tabBarController(_ tabBarController: TabBarViewController, shouldSelect viewController: UIViewController) -> Bool
-    func tabBarController(_ tabBarController: TabBarViewController, willPresent primaryViewController: UIViewController, presentationStyle: TabBarViewController.PrimaryPresentationStyle)
-    func tabBarController(_ tabBarController: TabBarViewController, didDismiss primaryViewController: UIViewController)
+public protocol SideTabBarViewControllerDelegate: AnyObject {
+    func tabBarController(_ tabBarController: SideTabBarViewController, shouldSelect viewController: UIViewController) -> Bool
+    func tabBarController(_ tabBarController: SideTabBarViewController, willPresent primaryViewController: UIViewController, presentationStyle: SideTabBarViewController.PrimaryPresentationStyle)
+    func tabBarController(_ tabBarController: SideTabBarViewController, didDismiss primaryViewController: UIViewController)
     
-    func tabBarController(_ tabBarController: TabBarViewController, didUpdateBarButtonItemForDisplayMode: TabBarViewController.DisplayMode) -> UIImage?
+    func tabBarController(_ tabBarController: SideTabBarViewController, didUpdateBarButtonItemForDisplayMode: SideTabBarViewController.DisplayMode) -> UIImage?
+    
+    func tabBarController(_ tabBarController: SideTabBarViewController, willChangeTo displayMode: SideTabBarViewController.DisplayMode)
 }
 
-public extension TabBarViewControllerDelegate {
-    func tabBarController(_ tabBarController: TabBarViewController, shouldSelect viewController: UIViewController) -> Bool { return true }
-    func tabBarController(_ tabBarController: TabBarViewController, willPresent primaryViewController: UIViewController, presentationStyle: TabBarViewController.PrimaryPresentationStyle) { }
-    func tabBarController(_ tabBarController: TabBarViewController, didDismiss primaryViewController: UIViewController) { }
+public extension SideTabBarViewControllerDelegate {
+    func tabBarController(_ tabBarController: SideTabBarViewController, shouldSelect viewController: UIViewController) -> Bool { return true }
+    func tabBarController(_ tabBarController: SideTabBarViewController, willPresent primaryViewController: UIViewController, presentationStyle: SideTabBarViewController.PrimaryPresentationStyle) { }
+    func tabBarController(_ tabBarController: SideTabBarViewController, didDismiss primaryViewController: UIViewController) { }
+    func tabBarController(_ tabBarController: SideTabBarViewController, willChangeTo displayMode: SideTabBarViewController.DisplayMode) { }
 }
 
-open class TabBarViewController: UIViewController {
+open class SideTabBarViewController: UIViewController {
     
     public enum PrimaryPresentationStyle {
         case modal
@@ -48,6 +52,9 @@ open class TabBarViewController: UIViewController {
     }
     
     open private(set) var displayMode: DisplayMode = .primaryHidden {
+        willSet {
+            self.delegate?.tabBarController(self, willChangeTo: newValue)
+        }
         didSet {
             self.updateDisplayModeBarButtonItem()
         }
@@ -66,6 +73,9 @@ open class TabBarViewController: UIViewController {
         }
     }
     
+    open var minimumPrimaryColumnWidth: CGFloat = 375
+    open var maximumPrimaryColumnWidth: CGFloat = 375
+    
     open var primaryWidth: CGFloat = 375 {
         didSet {
             self.updateViewState()
@@ -83,11 +93,11 @@ open class TabBarViewController: UIViewController {
         
         set {
             guard let vc = viewControllers[safe: newValue] else { return }
-            self.setVisibleDetailViewController(for: vc.tabBarItem)
+            self.setVisiblePrimaryViewController(for: vc.tabBarItem)
         }
     }
     
-    public weak var delegate: TabBarViewControllerDelegate?
+    public weak var delegate: SideTabBarViewControllerDelegate?
     
     public private(set) weak var tabBar: SideTabBar!
     public private(set) weak var selectedViewController: UIViewController?
@@ -130,7 +140,7 @@ open class TabBarViewController: UIViewController {
     private lazy var bottomViewControllers: [UIViewController] = []
     private var previousSelectedIndex: Int = 0
     
-    private var isDetailPresented: Bool {
+    open var isCollapsed: Bool {
         return self.detailWidthConstraint?.constant != Constants.detailHiddenWidth
     }
     
@@ -221,7 +231,7 @@ open class TabBarViewController: UIViewController {
         tabBar.translatesAutoresizingMaskIntoConstraints = false
         
         tabBar.onTabSelectedHandler { [weak self] item in
-            self?.setVisibleDetailViewController(for: item)
+            self?.setVisiblePrimaryViewController(for: item)
         }
         
         let screenGesture = UIScreenEdgePanGestureRecognizer(target: self, action: #selector(onLeftEdgeScreenGesture(_:)))
@@ -292,9 +302,7 @@ open class TabBarViewController: UIViewController {
             self.setTabBarVisible(true, animated: false)
             self.additionalSafeAreaInsets.left = self.tabBarWidth
             
-            
             let displayMode = self.posibleDisplayMode(from: self.prefferedDisplayMode)
-            self.updateDisplayModeBarButtonItem()
             
             switch displayMode {
             case .allVisible:
@@ -307,6 +315,8 @@ open class TabBarViewController: UIViewController {
             
             self.detailWidthConstraint?.constant = (self.selectedViewController == nil) ? Constants.detailHiddenWidth : self.primaryWidth
         }
+        
+        self.updateDisplayModeBarButtonItem()
         
         UIView.animate(withDuration: Constants.animationDuration) {
             self.view.layoutIfNeeded()
@@ -341,9 +351,9 @@ open class TabBarViewController: UIViewController {
             case .primaryOverlay:
                 self.displayModeButtonItem.image = UIImage(systemName: "chevron.left")
             case .primaryHidden:
-                self.displayModeButtonItem.image = UIImage(systemName: "sidebar.left")
+                self.displayModeButtonItem.image = self.isIPhoneHorizontalSizeClass ? UIImage(systemName: "chevron.up") : UIImage(systemName: "sidebar.left")
             case .primaryModal:
-                self.displayModeButtonItem.image = UIImage(systemName: "chevron.left")
+                self.displayModeButtonItem.image = nil
             }
         }
     }
@@ -437,7 +447,7 @@ open class TabBarViewController: UIViewController {
         }
     }
     
-    private func setVisibleDetailViewController(for tabBarItem: UITabBarItem?) {
+    private func setVisiblePrimaryViewController(for tabBarItem: UITabBarItem?) {
         if let item = tabBarItem {
             guard let index = self.viewControllers.firstIndex(where: { $0.tabBarItem === item }) else { return }
             self.previousSelectedIndex = index
@@ -446,7 +456,6 @@ open class TabBarViewController: UIViewController {
             let displayMode = self.posibleDisplayMode(from: self.prefferedDisplayMode)
             self.showPrimaryViewController(viewControllerToShow, for: displayMode)
         } else {
-            self.view.layoutIfNeeded()
             self.detailWidthConstraint?.constant = Constants.detailHiddenWidth
             
             let animator = UIViewPropertyAnimator(duration: Constants.animationDuration, timingParameters: UICubicTimingParameters(animationCurve: .easeInOut))
@@ -490,6 +499,7 @@ open class TabBarViewController: UIViewController {
                 self.detailRightConstraint.isActive = true
                 self.selectedViewController?.removeFromParentViewController()
                 self.addChildViewController(viewController, viewContainer: self.detailContainerView.contentView)
+                self.view.layoutIfNeeded()
                 
                 animator.addAnimations {
                     self.overlayView.alpha = 0
@@ -502,6 +512,7 @@ open class TabBarViewController: UIViewController {
                 self.tabBar.canDeselect = true
                 self.selectedViewController?.removeFromParentViewController()
                 self.addChildViewController(viewController, viewContainer: self.detailContainerView.contentView)
+                self.view.layoutIfNeeded()
                 
                 self.detailWidthConstraint?.constant = self.primaryWidth
                 
@@ -511,19 +522,6 @@ open class TabBarViewController: UIViewController {
                 
                 self.displayMode = .primaryOverlay
                 self.delegate?.tabBarController(self, willPresent: viewController, presentationStyle: .primary)
-//            case .primaryHidden:
-//                self.tabBar.canDeselect = true
-//                self.detailRightConstraint.isActive = false
-//
-//                animator.addAnimations {
-//                    self.overlayView.alpha = 0
-//                }
-//
-//                animator.addCompletion { position in
-//                    if position == .end {
-//                        self.selectedViewController?.removeFromParentViewController()
-//                    }
-//                }
             }
             
             animator.addAnimations {
@@ -550,7 +548,7 @@ open class TabBarViewController: UIViewController {
     }
 }
 
-extension TabBarViewController: UIAdaptivePresentationControllerDelegate {
+extension SideTabBarViewController: UIAdaptivePresentationControllerDelegate {
     
     public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
         self.delegate?.tabBarController(self, didDismiss: presentationController.presentedViewController)
@@ -587,7 +585,7 @@ private class TestViewController: UIViewController {
         super.viewDidLoad()
         
         self.navigationItem.leftBarButtonItem = self.sideTabBarController?.displayModeButtonItem
-        self.sideTabBarController?.prefferedDisplayMode = .primaryModal
+        self.sideTabBarController?.prefferedDisplayMode = .allVisible
         
         let label = UILabel()
         label.text = self.tabBarItem.title
