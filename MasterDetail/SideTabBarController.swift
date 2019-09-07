@@ -141,6 +141,13 @@ open class SideTabBarController: UIViewController {
         }
     }
     
+    /// A color what used for dimming content view when primary display as overlay.
+    open var overlayDimmingColor: UIColor = UIColor(white: 0, alpha: 0.3) {
+        didSet {
+            self.updateOverlayView()
+        }
+    }
+    
     /// A button that changes the display mode of the split view controller.
     open private(set) lazy var displayModeButtonItem: UIBarButtonItem = {
         return UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .done, target: self, action: #selector(onDisplayModeButtonItemPressed(barButtonItem:)))
@@ -230,7 +237,7 @@ open class SideTabBarController: UIViewController {
         self.primaryContainerView = primaryContainerView
         
         let overlayView = OverlayView(target: self, action: #selector(onOverlayPressed(_:)))
-        overlayView.backgroundColor = UIColor.barHairlineColor
+        overlayView.backgroundColor = self.overlayDimmingColor
         overlayView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(overlayView)
         self.overlayView = overlayView
@@ -299,7 +306,7 @@ open class SideTabBarController: UIViewController {
     }
     
     private func updateOverlayView() {
-        self.overlayView.backgroundColor = obscuresBackgroundDuringPresentation ? UIColor.barHairlineColor : .clear
+        self.overlayView.backgroundColor = obscuresBackgroundDuringPresentation ? self.overlayDimmingColor : .clear
     }
     
     private func updateViewState() {
