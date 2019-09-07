@@ -1,6 +1,6 @@
 //
-//  ViewController.swift
-//  MasterDetail
+//  SideTabBarController.swift
+//  SideTabBarController
 //
 //  Created by Vladislav Prusakov on 20.08.2019.
 //  Copyright © 2019 Vladislav Prusakov. All rights reserved.
@@ -8,49 +8,62 @@
 
 import UIKit
 
-// What i should do:
-// 1. Make OverlayView: Blur, background color and touch and close [ ]
-// 2. Make preferredDisplayMode [X]
-// 3. Make handle that primary modal dismissed [X]
-// 4. Make swipable tab bar for iPhone devices [X]
-// 5. Unselect tab if primary modal controller was dismissed [X]
-// 6. Add flow separator for change size between primary and master views
-
-public protocol SideTabBarViewControllerDelegate: AnyObject {
-    func tabBarController(_ tabBarController: SideTabBarViewController, shouldSelect viewController: UIViewController) -> Bool
-    func tabBarController(_ tabBarController: SideTabBarViewController, willPresent primaryViewController: UIViewController, presentationStyle: SideTabBarViewController.PrimaryPresentationStyle)
-    func tabBarController(_ tabBarController: SideTabBarViewController, didDismiss primaryViewController: UIViewController)
+/// A set of methods you implement to customize the behavior of a tab bar.
+public protocol SideTabBarControllerDelegate: AnyObject {
     
-    func tabBarController(_ tabBarController: SideTabBarViewController, didUpdateBarButtonItemForDisplayMode: SideTabBarViewController.DisplayMode) -> UIImage?
+    /// Asks the delegate whether the specified view controller should be made active.
+    func tabBarController(_ tabBarController: SideTabBarController, shouldSelect viewController: UIViewController) -> Bool
     
-    func tabBarController(_ tabBarController: SideTabBarViewController, willChangeTo displayMode: SideTabBarViewController.DisplayMode)
+    /// Tells the delegate that primary view controller will change presentation style.
+    func tabBarController(_ tabBarController: SideTabBarController, willPresent primaryViewController: UIViewController, presentationStyle: SideTabBarController.PrimaryPresentationStyle)
+    
+    /// Tells the delegate that primary view controller did dismiss.
+    func tabBarController(_ tabBarController: SideTabBarController, didDismiss primaryViewController: UIViewController)
+    
+    /// Called to allow the delegate to provide the image for display bar button item.
+    func tabBarController(_ tabBarController: SideTabBarController, didUpdateBarButtonItemForDisplayMode: SideTabBarController.DisplayMode) -> UIImage?
+    
+    /// Tells the delegate that the tab bar controlled will change display mode.
+    func tabBarController(_ tabBarController: SideTabBarController, willChangeTo displayMode: SideTabBarController.DisplayMode)
 }
 
-public extension SideTabBarViewControllerDelegate {
-    func tabBarController(_ tabBarController: SideTabBarViewController, shouldSelect viewController: UIViewController) -> Bool { return true }
-    func tabBarController(_ tabBarController: SideTabBarViewController, willPresent primaryViewController: UIViewController, presentationStyle: SideTabBarViewController.PrimaryPresentationStyle) { }
-    func tabBarController(_ tabBarController: SideTabBarViewController, didDismiss primaryViewController: UIViewController) { }
-    func tabBarController(_ tabBarController: SideTabBarViewController, willChangeTo displayMode: SideTabBarViewController.DisplayMode) { }
+public extension SideTabBarControllerDelegate {
+    func tabBarController(_ tabBarController: SideTabBarController, shouldSelect viewController: UIViewController) -> Bool { return true }
+    func tabBarController(_ tabBarController: SideTabBarController, willPresent primaryViewController: UIViewController, presentationStyle: SideTabBarController.PrimaryPresentationStyle) { }
+    func tabBarController(_ tabBarController: SideTabBarController, didDismiss primaryViewController: UIViewController) { }
+    func tabBarController(_ tabBarController: SideTabBarController, willChangeTo displayMode: SideTabBarController.DisplayMode) { }
 }
 
-open class SideTabBarViewController: UIViewController {
+/// A container view controller that manages a radio-style selection interface. Selected determines which child view controller display as side menu.
+open class SideTabBarController: UIViewController {
     
-    public enum PrimaryPresentationStyle {
+    /// Constants describing the possible presentation style for primary view controller.
+    public enum PrimaryPresentationStyle: Int {
+        /// The primary view controller displayed as model
         case modal
-        case primary
+        /// The primary view controller displayed as part of split view.
+        case splitView
     }
     
-    public enum DisplayMode {
+    /// Constants describing the possible display modes for a split view controller.
+    public enum DisplayMode: Int {
+        /// The primary view controller is hidden.
         case primaryHidden
+        /// The primary view controller is layered on top of the secondary view controller, leaving the secondary view controller partially visible.
         case primaryOverlay
+        /// The primary view controller display as modal.
         case primaryModal
+        /// The primary and secondary view controllers are displayed side-by-side onscreen.
         case allVisible
     }
     
+    /// An array of the view controllers displayed by the tab bar interface.
     public var viewControllers: [UIViewController] {
         return topViewControllers + bottomViewControllers
     }
     
+    /// The current arrangement of the split's contents.
+    /// This property reflects the arrangement of the two child view controllers in a split view interface.
     open private(set) var displayMode: DisplayMode = .primaryHidden {
         willSet {
             self.delegate?.tabBarController(self, willChangeTo: newValue)
@@ -60,12 +73,15 @@ open class SideTabBarViewController: UIViewController {
         }
     }
     
+    /// The preferred arrangement of the split interface.
     open var prefferedDisplayMode: DisplayMode = .primaryOverlay {
         didSet {
             self.updateViewState()
         }
     }
     
+    /// A float value that set width for tab bar.
+    /// The default value is 70.
     open var tabBarWidth: CGFloat = 70 {
         didSet {
             self.tabBarWidthConstraint?.constant = self.tabBarWidth
@@ -73,9 +89,8 @@ open class SideTabBarViewController: UIViewController {
         }
     }
     
-    open var minimumPrimaryColumnWidth: CGFloat = 375
-    open var maximumPrimaryColumnWidth: CGFloat = 375
-    
+    /// A float value that set width for primary view.
+    /// The default value is 375.
     open var primaryWidth: CGFloat = 375 {
         didSet {
             self.updateViewState()
@@ -97,10 +112,16 @@ open class SideTabBarViewController: UIViewController {
         }
     }
     
-    public weak var delegate: SideTabBarViewControllerDelegate?
+    /// The tab bar controller’s delegate object.
+    public weak var delegate: SideTabBarControllerDelegate?
     
+    /// The tab bar view associated with this controller.
     public private(set) weak var tabBar: SideTabBar!
+    
+    /// The view controller associated with the currently selected tab item.
     public private(set) weak var selectedViewController: UIViewController?
+    
+    /// The root view controller associated with the tab bar.
     public private(set) weak var contentViewController: UIViewController?
     
     /// A Boolean indicating whether the underlying content is obscured during a menu presented
@@ -112,39 +133,43 @@ open class SideTabBarViewController: UIViewController {
         }
     }
     
+    /// A visual effect what used by default for tab bar and primary view.
     open var backgroundVisualEffect: UIVisualEffect = UIBlurEffect(style: .systemChromeMaterial) {
         didSet {
-            self.detailContainerView?.effect = self.backgroundVisualEffect
+            self.primaryContainerView?.effect = self.backgroundVisualEffect
             self.tabBar?.visualEffect = self.backgroundVisualEffect
         }
     }
     
+    /// A button that changes the display mode of the split view controller.
     open private(set) lazy var displayModeButtonItem: UIBarButtonItem = {
         return UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .done, target: self, action: #selector(onDisplayModeButtonItemPressed(barButtonItem:)))
     }()
     
     // MARK: Views
-    private weak var detailContainerView: UIVisualEffectView!
+    private weak var primaryContainerView: UIVisualEffectView!
     private weak var contentContainerView: UIView!
     private weak var overlayView: OverlayView!
     private weak var separatorView: UIView!
     
     // MARK: Constraints
-    private var detailWidthConstraint: NSLayoutConstraint?
+    private var primaryWidthConstraint: NSLayoutConstraint!
+    private var primaryRightConstraint: NSLayoutConstraint!
     private weak var tabBarWidthConstraint: NSLayoutConstraint?
     private var tabBarLeftConstraint: NSLayoutConstraint!
-    private var detailRightConstraint: NSLayoutConstraint!
     
     // MARK: Other
     private lazy var topViewControllers: [UIViewController] = []
     private lazy var bottomViewControllers: [UIViewController] = []
     private var previousSelectedIndex: Int = 0
     
+    /// A Boolean value indicating whether only one of the child view controllers is displayed.
     open var isCollapsed: Bool {
-        return self.detailWidthConstraint?.constant != Constants.detailHiddenWidth
+        return self.primaryWidthConstraint.constant != Constants.detailHiddenWidth
     }
     
-    private var isTabBarPresented: Bool = false
+    /// A Boolean value indicating that tab bar is displayed.
+    open private(set) var isTabBarPresented: Bool = false
     
     private enum Constants {
         static let detailHiddenWidth: CGFloat = 0
@@ -155,21 +180,12 @@ open class SideTabBarViewController: UIViewController {
         super.viewDidLoad()
         
         self.setup()
-        
-        // MARK: - Mock
-        
-        let firstController = TableTestViewController(tabBarItem: UITabBarItem(title: "Some new message", image: #imageLiteral(resourceName: "documents"), tag: 0))
-        let secondController = TestViewController(tabBarItem: UITabBarItem(title: "TestAgain", image: #imageLiteral(resourceName: "finance"), tag: 1))
-        self.setViewControllers([firstController, secondController], positioning: .bottom, animated: false)
-        
-        let firstController1 = TableTestViewController(tabBarItem: UITabBarItem(title: "Some new message", image: #imageLiteral(resourceName: "documents"), tag: 0))
-        let secondController1 = TestViewController(tabBarItem: UITabBarItem(title: "TestAga32234in", image: #imageLiteral(resourceName: "finance"), tag: 1))
-        self.setViewControllers([firstController1, secondController1], positioning: .top, animated: false)
-        
-        let mainController = TestViewController(tabBarItem: UITabBarItem(title: "TestAgain", image: #imageLiteral(resourceName: "finance"), tag: 1))
-        self.showContentViewController(UINavigationController(rootViewController: mainController), sender: nil)
     }
     
+    /// Sets the view controllers of the tab bar controller.
+    /// - Parameter viewControllers: The array of custom view controllers to display in the tab bar interface. The order of the view controllers in this array corresponds to the display order in the tab bar, with the controller at index 0 representing the top-most tab, the controller at index 1 the next tab to the below, and so on.
+    /// - Parameter positioning: Set position for items on tab bar.
+    /// - Parameter animated: If true, the tab bar items for the view controllers are animated into position. If false, changes to the tab bar items are reflected immediately.
     open func setViewControllers(_ viewControllers: [UIViewController]?, positioning: SideTabBar.ItemPositioning = .automatic, animated: Bool) {
         
         let controllers = viewControllers ?? []
@@ -184,10 +200,12 @@ open class SideTabBarViewController: UIViewController {
         self.tabBar.setItems(tabBarItems, positioning: positioning, animated: animated)
     }
     
-    open func showContentViewController(_ vc: UIViewController, sender: Any?) {
+    /// Set the root view controller of the tab view controller.
+    /// - Parameter contentViewController: The view controller to display like root.
+    open func setContentViewController(_ contentViewController: UIViewController) {
         self.contentViewController?.removeFromParentViewController()
-        self.addChildViewController(vc, viewContainer: self.contentContainerView)
-        self.contentViewController = vc
+        self.addChildViewController(contentViewController, viewContainer: self.contentContainerView)
+        self.contentViewController = contentViewController
     }
     
     // MARK: - Private
@@ -205,23 +223,15 @@ open class SideTabBarViewController: UIViewController {
         view.addSubview(separatorView)
         self.separatorView = separatorView
         
-        let detailContainerView = UIVisualEffectView()
+        let primaryContainerView = UIVisualEffectView()
+        primaryContainerView.effect = self.backgroundVisualEffect
+        primaryContainerView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(primaryContainerView)
+        self.primaryContainerView = primaryContainerView
         
-        // TODO: Remove or change
-        #if targetEnvironment(macCatalyst)
-        self.backgroundVisualEffect = UIBlurEffect.makeBlurThroughEffect(style: .throughWhileActive)
-        #endif
-        
-        detailContainerView.effect = self.backgroundVisualEffect
-        detailContainerView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(detailContainerView)
-        self.detailContainerView = detailContainerView
-        
-        let overlayView = OverlayView()
-        overlayView.alpha = 0
+        let overlayView = OverlayView(target: self, action: #selector(onOverlayPressed(_:)))
         overlayView.backgroundColor = UIColor.barHairlineColor
         overlayView.translatesAutoresizingMaskIntoConstraints = false
-        overlayView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(onOverlayPressed(_:))))
         view.addSubview(overlayView)
         self.overlayView = overlayView
         
@@ -238,15 +248,16 @@ open class SideTabBarViewController: UIViewController {
         screenGesture.edges = .left
         contentContainerView.addGestureRecognizer(screenGesture)
         
-        let panGesture = UIPanGestureRecognizer(target: self, action: #selector(onTabBarPanGestire(_:)))
+        let panGesture = UIPanGestureRecognizer(target: self, action: #selector(onTabBarPanGesture))
         tabBar.addGestureRecognizer(panGesture)
         
         view.addSubview(tabBar)
         self.tabBar = tabBar
         
-        let detailWidthConstraint = detailContainerView.widthAnchor.constraint(equalToConstant: Constants.detailHiddenWidth)
+        let primaryWidthConstraint = primaryContainerView.widthAnchor.constraint(equalToConstant: Constants.detailHiddenWidth)
+        primaryWidthConstraint.priority = UILayoutPriority(rawValue: 999)
         let tabBarWidthConstraint = tabBar.widthAnchor.constraint(equalToConstant: self.tabBarWidth)
-        let detailRightConstraint = detailContainerView.rightAnchor.constraint(equalTo: contentContainerView.leftAnchor)
+        let primaryRightConstraint = primaryContainerView.rightAnchor.constraint(equalTo: contentContainerView.leftAnchor)
         let contentContainerLeftConstraint = contentContainerView.leftAnchor.constraint(equalTo: view.leftAnchor)
         contentContainerLeftConstraint.priority = UILayoutPriority(rawValue: 800)
         
@@ -263,17 +274,17 @@ open class SideTabBarViewController: UIViewController {
             contentContainerView.rightAnchor.constraint(equalTo: view.rightAnchor),
             contentContainerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             
-            detailWidthConstraint,
-            detailContainerView.leftAnchor.constraint(equalTo: tabBar.rightAnchor),
-            detailContainerView.topAnchor.constraint(equalTo: view.topAnchor),
-            detailContainerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            primaryWidthConstraint,
+            primaryContainerView.leftAnchor.constraint(equalTo: tabBar.rightAnchor),
+            primaryContainerView.topAnchor.constraint(equalTo: view.topAnchor),
+            primaryContainerView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             
-            separatorView.leftAnchor.constraint(equalTo: detailContainerView.rightAnchor),
+            separatorView.leftAnchor.constraint(equalTo: primaryContainerView.rightAnchor),
             separatorView.topAnchor.constraint(equalTo: view.topAnchor),
             separatorView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             separatorView.widthAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale),
             
-            overlayView.leftAnchor.constraint(equalTo: overlayView.rightAnchor),
+            overlayView.leftAnchor.constraint(equalTo: separatorView.rightAnchor),
             overlayView.rightAnchor.constraint(equalTo: view.rightAnchor),
             overlayView.topAnchor.constraint(equalTo: view.topAnchor),
             overlayView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
@@ -281,8 +292,8 @@ open class SideTabBarViewController: UIViewController {
         
         self.tabBarLeftConstraint = tabBarLeftConstraint
         self.tabBarWidthConstraint = tabBarWidthConstraint
-        self.detailWidthConstraint = detailWidthConstraint
-        self.detailRightConstraint = detailRightConstraint
+        self.primaryWidthConstraint = primaryWidthConstraint
+        self.primaryRightConstraint = primaryRightConstraint
         
         self.updateViewState()
     }
@@ -294,10 +305,10 @@ open class SideTabBarViewController: UIViewController {
     private func updateViewState() {
         if self.isIPhoneHorizontalSizeClass {
             self.additionalSafeAreaInsets.left = 0
-            self.detailRightConstraint.isActive = false
+            self.primaryRightConstraint.isActive = false
             self.setTabBarVisible(false, animated: false)
             self.tabBar.canDeselect = true
-            self.detailWidthConstraint?.constant = Constants.detailHiddenWidth
+            self.primaryWidthConstraint.constant = Constants.detailHiddenWidth
         } else {
             self.setTabBarVisible(true, animated: false)
             self.additionalSafeAreaInsets.left = self.tabBarWidth
@@ -307,13 +318,13 @@ open class SideTabBarViewController: UIViewController {
             switch displayMode {
             case .allVisible:
                 self.tabBar.canDeselect = false
-                self.detailRightConstraint.isActive = true
+                self.primaryRightConstraint.isActive = true
             case .primaryHidden, .primaryOverlay, .primaryModal:
                 self.tabBar.canDeselect = true
-                self.detailRightConstraint.isActive = false
+                self.primaryRightConstraint.isActive = false
             }
             
-            self.detailWidthConstraint?.constant = (self.selectedViewController == nil) ? Constants.detailHiddenWidth : self.primaryWidth
+            self.primaryWidthConstraint.constant = (self.selectedViewController == nil) ? Constants.detailHiddenWidth : self.primaryWidth
         }
         
         self.updateDisplayModeBarButtonItem()
@@ -369,14 +380,16 @@ open class SideTabBarViewController: UIViewController {
     private func updateSelectedViewController() {
         guard let viewControllerToShow = self.selectedViewController else { return }
         if self.isIPhoneHorizontalSizeClass {
+            self.overlayView.dismiss()
             viewControllerToShow.removeFromParentViewController()
             self.delegate?.tabBarController(self, willPresent: viewControllerToShow, presentationStyle: .modal)
             viewControllerToShow.presentationController?.delegate = self
             self.present(viewControllerToShow, animated: false)
         } else {
-            self.delegate?.tabBarController(self, willPresent: viewControllerToShow, presentationStyle: .primary)
+            self.overlayView.display()
+            self.delegate?.tabBarController(self, willPresent: viewControllerToShow, presentationStyle: .splitView)
             viewControllerToShow.dismiss(animated: false, completion: {
-                self.addChildViewController(viewControllerToShow, viewContainer: self.detailContainerView.contentView)
+                self.addChildViewController(viewControllerToShow, viewContainer: self.primaryContainerView.contentView)
             })
         }
     }
@@ -426,7 +439,7 @@ open class SideTabBarViewController: UIViewController {
         }
     }
     
-    @objc private func onTabBarPanGestire(_ gesture: UIPanGestureRecognizer) {
+    @objc private func onTabBarPanGesture(_ gesture: UIPanGestureRecognizer) {
         guard self.isIPhoneHorizontalSizeClass && self.isTabBarPresented else { return }
         let translation = gesture.translation(in: gesture.view)
         
@@ -456,12 +469,12 @@ open class SideTabBarViewController: UIViewController {
             let displayMode = self.posibleDisplayMode(from: self.prefferedDisplayMode)
             self.showPrimaryViewController(viewControllerToShow, for: displayMode)
         } else {
-            self.detailWidthConstraint?.constant = Constants.detailHiddenWidth
+            self.primaryWidthConstraint.constant = Constants.detailHiddenWidth
             
             let animator = UIViewPropertyAnimator(duration: Constants.animationDuration, timingParameters: UICubicTimingParameters(animationCurve: .easeInOut))
             
             animator.addAnimations {
-                self.overlayView.alpha = 0
+                self.overlayView.dismiss()
                 self.view.layoutIfNeeded()
             }
             
@@ -496,32 +509,32 @@ open class SideTabBarViewController: UIViewController {
             switch displayMode {
             case .allVisible:
                 self.tabBar.canDeselect = false
-                self.detailRightConstraint.isActive = true
+                self.primaryRightConstraint.isActive = true
                 self.selectedViewController?.removeFromParentViewController()
-                self.addChildViewController(viewController, viewContainer: self.detailContainerView.contentView)
+                self.addChildViewController(viewController, viewContainer: self.primaryContainerView.contentView)
                 self.view.layoutIfNeeded()
                 
                 animator.addAnimations {
-                    self.overlayView.alpha = 0
+                    self.overlayView.dismiss()
                 }
                 
-                self.delegate?.tabBarController(self, willPresent: viewController, presentationStyle: .primary)
+                self.delegate?.tabBarController(self, willPresent: viewController, presentationStyle: .splitView)
                 self.displayMode = .allVisible
-                self.detailWidthConstraint?.constant = self.primaryWidth
+                self.primaryWidthConstraint.constant = self.primaryWidth
             case .primaryModal, .primaryOverlay, .primaryHidden:
                 self.tabBar.canDeselect = true
                 self.selectedViewController?.removeFromParentViewController()
-                self.addChildViewController(viewController, viewContainer: self.detailContainerView.contentView)
+                self.addChildViewController(viewController, viewContainer: self.primaryContainerView.contentView)
                 self.view.layoutIfNeeded()
                 
-                self.detailWidthConstraint?.constant = self.primaryWidth
+                self.primaryWidthConstraint.constant = self.primaryWidth
                 
                 animator.addAnimations {
-                    self.overlayView.alpha = 1
+                    self.overlayView.display()
                 }
                 
                 self.displayMode = .primaryOverlay
-                self.delegate?.tabBarController(self, willPresent: viewController, presentationStyle: .primary)
+                self.delegate?.tabBarController(self, willPresent: viewController, presentationStyle: .splitView)
             }
             
             animator.addAnimations {
@@ -548,7 +561,26 @@ open class SideTabBarViewController: UIViewController {
     }
 }
 
-extension SideTabBarViewController: UIAdaptivePresentationControllerDelegate {
+public extension UIViewController {
+    
+    /// The nearest ancestor in the view controller hierarchy that is a side tab bar controller.
+    var sideTabBarController: SideTabBarController? {
+        if let tabBar = self.parent as? SideTabBarController {
+            return tabBar
+        } else if let navController = self.parent as? UINavigationController {
+            return navController.sideTabBarController
+        } else if let tabController = self.parent as? UITabBarController {
+            return tabController.sideTabBarController
+        }
+        
+        return nil
+    }
+}
+
+
+// MARK: - UIAdaptivePresentationControllerDelegate
+
+extension SideTabBarController: UIAdaptivePresentationControllerDelegate {
     
     public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
         self.delegate?.tabBarController(self, didDismiss: presentationController.presentedViewController)
@@ -559,98 +591,117 @@ extension SideTabBarViewController: UIAdaptivePresentationControllerDelegate {
 
 class OverlayView: UIView {
     
-}
-
-// MARK: - Test Controllers
-
-private class TestViewController: UIViewController {
+    private weak var tapGesture: UITapGestureRecognizer?
     
-    private weak var label: UILabel!
-    
-    init(tabBarItem: UITabBarItem) {
-        super.init(nibName: nil, bundle: nil)
-        self.tabBarItem = tabBarItem
+    init(target: AnyObject, action: Selector) {
+        super.init(frame: .zero)
+        self.alpha = 0
+        let gesture = UITapGestureRecognizer(target: target, action: action)
+        self.addGestureRecognizer(gesture)
+        self.tapGesture = gesture
     }
     
-    init(name: String) {
-        super.init(nibName: nil, bundle: nil)
-        self.tabBarItem = UITabBarItem(title: name, image: nil, selectedImage: nil)
-    }
-    
-    deinit {
-        print("deinited controller with title:", tabBarItem.title ?? "<WITHOUT TITLE>")
-    }
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        self.navigationItem.leftBarButtonItem = self.sideTabBarController?.displayModeButtonItem
-        self.sideTabBarController?.prefferedDisplayMode = .allVisible
-        
-        let label = UILabel()
-        label.text = self.tabBarItem.title
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.textAlignment = .center
-        self.view.addSubview(label)
-        self.label = label
-        
-        NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: self.view.centerYAnchor),
-            label.leftAnchor.constraint(equalTo: self.view.leftAnchor)
-        ])
+    var isDisplayed: Bool {
+        return alpha != 0
     }
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-}
-
-private class TableTestViewController: UITableViewController {
     
-    init(tabBarItem: UITabBarItem) {
-        super.init(nibName: nil, bundle: nil)
-        self.tabBarItem = tabBarItem
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        return self.isDisplayed
     }
     
-    deinit {
-        print("deinited \(self)")
+    func display() {
+        self.alpha = 1
     }
     
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 20
-    }
-    
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        return tableView.dequeueReusableCell(withIdentifier: "identifier") ?? UITableViewCell(style: .default, reuseIdentifier: "identifier")
-    }
-    
-    override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
-        cell.backgroundColor = .clear
-        cell.textLabel?.text = "Some index \(indexPath.row)"
-    }
-    
-    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let viewController = TestViewController(name: "Some index \(indexPath.row)")
-        self.sideTabBarController?.showContentViewController(UINavigationController(rootViewController: viewController), sender: nil)
-    }
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        self.tableView.backgroundColor = .clear
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+    func dismiss() {
+        self.alpha = 0
     }
 }
 
-class SplitTestVC: UIViewController {
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        self.navigationItem.leftBarButtonItem = self.splitViewController?.displayModeButtonItem
-        self.splitViewController?.preferredDisplayMode = .allVisible
-    }
-    
-}
+//// MARK: - Test Controllers
+//
+//private class TestViewController: UIViewController {
+//    
+//    private weak var label: UILabel!
+//    
+//    init(tabBarItem: UITabBarItem) {
+//        super.init(nibName: nil, bundle: nil)
+//        self.tabBarItem = tabBarItem
+//    }
+//    
+//    init(name: String) {
+//        super.init(nibName: nil, bundle: nil)
+//        self.tabBarItem = UITabBarItem(title: name, image: nil, selectedImage: nil)
+//    }
+//    
+//    deinit {
+//        print("deinited controller with title:", tabBarItem.title ?? "<WITHOUT TITLE>")
+//    }
+//    
+//    override func viewDidLoad() {
+//        super.viewDidLoad()
+//        
+//        self.navigationItem.leftBarButtonItem = self.sideTabBarController?.displayModeButtonItem
+//        self.sideTabBarController?.prefferedDisplayMode = .primaryOverlay
+//        
+//        let label = UILabel()
+//        label.text = self.tabBarItem.title
+//        label.translatesAutoresizingMaskIntoConstraints = false
+//        label.textAlignment = .center
+//        self.view.addSubview(label)
+//        self.label = label
+//        
+//        NSLayoutConstraint.activate([
+//            label.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
+//            label.centerYAnchor.constraint(equalTo: self.view.centerYAnchor),
+//            label.leftAnchor.constraint(equalTo: self.view.leftAnchor)
+//        ])
+//    }
+//    
+//    required init?(coder: NSCoder) {
+//        fatalError("init(coder:) has not been implemented")
+//    }
+//}
+//
+//private class TableTestViewController: UITableViewController {
+//    
+//    init(tabBarItem: UITabBarItem) {
+//        super.init(nibName: nil, bundle: nil)
+//        self.tabBarItem = tabBarItem
+//    }
+//    
+//    deinit {
+//        print("deinited \(self)")
+//    }
+//    
+//    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+//        return 20
+//    }
+//    
+//    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+//        return tableView.dequeueReusableCell(withIdentifier: "identifier") ?? UITableViewCell(style: .default, reuseIdentifier: "identifier")
+//    }
+//    
+//    override func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+//        cell.backgroundColor = .clear
+//        cell.textLabel?.text = "Some index \(indexPath.row)"
+//    }
+//    
+//    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+//        let viewController = TestViewController(name: "Some index \(indexPath.row)")
+//        self.sideTabBarController?.setContentViewController(UINavigationController(rootViewController: viewController), sender: nil)
+//    }
+//    
+//    override func viewDidLoad() {
+//        super.viewDidLoad()
+//        self.tableView.backgroundColor = .clear
+//    }
+//    
+//    required init?(coder: NSCoder) {
+//        fatalError("init(coder:) has not been implemented")
+//    }
+//}

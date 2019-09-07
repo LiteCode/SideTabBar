@@ -20,13 +20,6 @@ extension UIView {
     }
 }
 
-extension NSLayoutConstraint {
-        @IBInspectable var pxConstant: CGFloat {
-        get { return self.constant * UIScreen.main.scale }
-        set { self.constant = newValue / UIScreen.main.scale }
-    }
-}
-
 extension UIBlurEffect {
     
     enum ThroughStyle: Int64 {
@@ -71,19 +64,5 @@ extension UIViewController {
         self.addChild(viewController)
         viewConfigurator(viewController.view)
         viewController.didMove(toParent: self)
-    }
-}
-
-public extension UIViewController {
-    var sideTabBarController: TabBarViewController? {
-        if let tabBar = self.parent as? TabBarViewController {
-            return tabBar
-        } else if let navController = self.parent as? UINavigationController {
-            return navController.sideTabBarController
-        } else if let tabController = self.parent as? UITabBarController {
-            return tabController.sideTabBarController
-        }
-        
-        return nil
     }
 }

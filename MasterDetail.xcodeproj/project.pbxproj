@@ -12,7 +12,7 @@
 		EF3E074C231D7A030020CE5E /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF3E074B231D7A030020CE5E /* Extensions.swift */; };
 		EF5DD7F9230C2AB5004A357D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF5DD7F8230C2AB5004A357D /* AppDelegate.swift */; };
 		EF5DD7FB230C2AB5004A357D /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF5DD7FA230C2AB5004A357D /* SceneDelegate.swift */; };
-		EF5DD7FD230C2AB5004A357D /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF5DD7FC230C2AB5004A357D /* ViewController.swift */; };
+		EF5DD7FD230C2AB5004A357D /* SideTabBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF5DD7FC230C2AB5004A357D /* SideTabBarController.swift */; };
 		EF5DD800230C2AB5004A357D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EF5DD7FE230C2AB5004A357D /* Main.storyboard */; };
 		EF5DD802230C2AB7004A357D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EF5DD801230C2AB7004A357D /* Assets.xcassets */; };
 		EF5DD805230C2AB7004A357D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EF5DD803230C2AB7004A357D /* LaunchScreen.storyboard */; };
@@ -25,7 +25,7 @@
 		EF5DD7F5230C2AB5004A357D /* MasterDetail.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MasterDetail.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF5DD7F8230C2AB5004A357D /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		EF5DD7FA230C2AB5004A357D /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		EF5DD7FC230C2AB5004A357D /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		EF5DD7FC230C2AB5004A357D /* SideTabBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideTabBarController.swift; sourceTree = "<group>"; };
 		EF5DD7FF230C2AB5004A357D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		EF5DD801230C2AB7004A357D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EF5DD804230C2AB7004A357D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -68,7 +68,7 @@
 				EFDC8D84231BFA0900920BC8 /* MasterDetail.entitlements */,
 				EF5DD7F8230C2AB5004A357D /* AppDelegate.swift */,
 				EF5DD7FA230C2AB5004A357D /* SceneDelegate.swift */,
-				EF5DD7FC230C2AB5004A357D /* ViewController.swift */,
+				EF5DD7FC230C2AB5004A357D /* SideTabBarController.swift */,
 				EF5DD7FE230C2AB5004A357D /* Main.storyboard */,
 				EF5DD801230C2AB7004A357D /* Assets.xcassets */,
 				EF5DD803230C2AB7004A357D /* LaunchScreen.storyboard */,
@@ -154,7 +154,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EF5DD7FD230C2AB5004A357D /* ViewController.swift in Sources */,
+				EF5DD7FD230C2AB5004A357D /* SideTabBarController.swift in Sources */,
 				EF3E074C231D7A030020CE5E /* Extensions.swift in Sources */,
 				EF3E074A231D79D10020CE5E /* SideTabBar.swift in Sources */,
 				EF3E0748231D79B00020CE5E /* TabBarButton.swift in Sources */,

@@ -8,8 +8,12 @@
 
 import UIKit
 
+/// The SideTabBarDelegate protocol defines optional methods for a delegate of a SideTabBar object.
 public protocol SideTabBarDelegate: AnyObject {
+    /// Called to the delegate when should the user selects a tab bar item.
     func tabBar(_ tabBar: SideTabBar, shouldSelect tabBarItem: UITabBarItem) -> Bool
+    
+    /// Sent to the delegate when the user selects a tab bar item.
     func tabBar(_ tabBar: SideTabBar, didSelect tabBarItem: UITabBarItem)
 }
 
@@ -18,13 +22,56 @@ public extension SideTabBarDelegate {
     func tabBar(_ tabBar: SideTabBar, didSelect tabBarItem: UITabBarItem) {}
 }
 
+/// A control that displays one or more buttons in a tab bar for selecting between different subtasks, views, or modes in an app.
 open class SideTabBar: UIView {
     
+    /// Constants
     public enum ItemPositioning {
         case automatic
         case top
         case bottom
     }
+    
+    // MARK: - Public properties.
+    
+    /// The tab bar’s delegate object.
+    open weak var delegate: SideTabBarDelegate?
+    
+    /// The tint color to apply to unselected tabs.
+    open var unselectedItemTintColor: UIColor?
+    
+    /// The items displayed by the tab bar.
+    open var items: [UITabBarItem]? {
+        get {
+            var items = _topItems ?? []
+            items.append(contentsOf: _bottomItems ?? [])
+            return items
+        }
+        set { self.setItems(newValue, animated: false) }
+    }
+    
+    /// The amount of space (in points) to use between tab bar items.
+    open var itemSpacing: CGFloat = 0 {
+        didSet {
+            self.topItemsStackView.spacing = self.itemSpacing
+            self.bottomItemsStackView.spacing = self.itemSpacing
+        }
+    }
+    
+    /// The currently selected item on the tab bar.
+    open var selectedItem: UITabBarItem? {
+        willSet {
+            self.selectedHandler?(newValue)
+            
+            if let value = newValue {
+                self.selectedButton = self.buttons.first { $0.tabBarItem === value }
+            } else {
+                self.selectedButton = nil
+            }
+        }
+    }
+    
+    // MARK: - Private properties.
     
     private weak var stackView: UIStackView!
     private weak var visualEffectView: UIVisualEffectView!
@@ -39,8 +86,7 @@ open class SideTabBar: UIView {
     private var bottomItemsStackView: UIStackView!
     private var verticalSeparatorView: UIView!
     
-    open weak var delegate: SideTabBarDelegate?
-    open var unselectedItemTintColor: UIColor?
+    var canDeselect = true
     
     private var _topItems: [UITabBarItem]?
     private var _bottomItems: [UITabBarItem]?
@@ -54,22 +100,6 @@ open class SideTabBar: UIView {
         return items
     }
     
-    open var items: [UITabBarItem]? {
-        get {
-            var items = _topItems ?? []
-            items.append(contentsOf: _bottomItems ?? [])
-            return items
-        }
-        set { self.setItems(newValue, animated: false) }
-    }
-    
-    open var itemSpacing: CGFloat = 0 {
-        didSet {
-            self.topItemsStackView.spacing = self.itemSpacing
-            self.bottomItemsStackView.spacing = self.itemSpacing
-        }
-    }
-    
     private weak var selectedButton: TabBarButton? {
         didSet {
             oldValue?.isSelected = false
@@ -77,17 +107,7 @@ open class SideTabBar: UIView {
         }
     }
     
-    open var selectedItem: UITabBarItem? {
-        willSet {
-            self.selectedHandler?(newValue)
-            
-            if let value = newValue {
-                self.selectedButton = self.buttons.first { $0.tabBarItem === value }
-            } else {
-                self.selectedButton = nil
-            }
-        }
-    }
+    // MARK: - Public
     
     public init() {
         super.init(frame: .zero)
@@ -104,17 +124,49 @@ open class SideTabBar: UIView {
         self.setup()
     }
     
-    var canDeselect = true
+    /// Sets the items on the tab bar, optionally animating any changes into position.
+    /// - Parameter items: The array of UITabBarItem objects to display.
+    /// - Parameter animated: A Boolean indicating whether changes should be animated. Specify true to animate changes or false to display the new items without animations. .
+    open func setItems(_ items: [UITabBarItem]?, animated: Bool) {
+        self.setItems(items, positioning: .automatic, animated: animated)
+    }
+    
+    /// Sets the items on the tab bar, optionally animating any changes into position.
+    /// - Parameter items: The array of UITabBarItem objects to display.
+    /// - Parameter positioning: The position where items should locate.
+    /// - Parameter animated: A Boolean indicating whether changes should be animated. Specify true to animate changes or false to display the new items without animations. .
+    open func setItems(_ items: [UITabBarItem]?, positioning: ItemPositioning, animated: Bool) {
+        let buttons = items?.compactMap { TabBarButton(item: $0, tabBar: self, target: self, action: #selector(onTabButtonPressed(_:))) } ?? []
+        
+        guard let stackView = positioning == .bottom ? self.bottomItemsStackView : self.topItemsStackView else { return }
+        
+        UIView.perform(usingAnimation: animated) {
+            for subview in stackView.arrangedSubviews {
+                stackView.removeArrangedSubview(subview)
+            }
+
+            for button in buttons {
+                button.axis = .vertical
+                stackView.addArrangedSubview(button)
+            }
+        }
+        
+        switch positioning {
+        case .bottom:
+            self._bottomButtons = buttons
+            self._bottomItems = items
+        default:
+            self._topButtons = buttons
+            self._topItems = items
+        }
+    }
+    
+    // MARK: - Private
     
     private var selectedHandler: ((UITabBarItem?) -> Void)?
     
     private func setup() {
-        
         self.backgroundColor = .clear
-        
-        #if targetEnvironment(macCatalyst)
-        self.visualEffect = UIBlurEffect.makeBlurThroughEffect(style: .throughWhileActive)
-        #endif
         
         let visualEffectView = UIVisualEffectView()
         visualEffectView.translatesAutoresizingMaskIntoConstraints = false
@@ -155,36 +207,6 @@ open class SideTabBar: UIView {
         
         self.topItemsStackView = topItemsStackView
         self.bottomItemsStackView = bottomItemsStackView
-    }
-    
-    open func setItems(_ items: [UITabBarItem]?, animated: Bool) {
-        self.setItems(items, positioning: .automatic, animated: animated)
-    }
-    
-    open func setItems(_ items: [UITabBarItem]?, positioning: ItemPositioning, animated: Bool) {
-        let buttons = items?.compactMap { TabBarButton(item: $0, tabBar: self, target: self, action: #selector(onTabButtonPressed(_:))) } ?? []
-        
-        guard let stackView = positioning == .bottom ? self.bottomItemsStackView : self.topItemsStackView else { return }
-        
-        UIView.perform(usingAnimation: animated) {
-            for subview in stackView.arrangedSubviews {
-                stackView.removeArrangedSubview(subview)
-            }
-
-            for button in buttons {
-                button.axis = .vertical
-                stackView.addArrangedSubview(button)
-            }
-        }
-        
-        switch positioning {
-        case .bottom:
-            self._bottomButtons = buttons
-            self._bottomItems = items
-        default:
-            self._topButtons = buttons
-            self._topItems = items
-        }
     }
     
     @objc private func onTabButtonPressed(_ button: TabBarButton) {
