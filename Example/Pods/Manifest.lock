@@ -1,0 +1,16 @@
+PODS:
+  - SideTabBar (0.1.0)
+
+DEPENDENCIES:
+  - SideTabBar (from `../`)
+
+EXTERNAL SOURCES:
+  SideTabBar:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  SideTabBar: 5120d7bf8515597f1b9f6e08ee49353048247912
+
+PODFILE CHECKSUM: 559e4019944bcd0795952bde172885d27b5bded8
+
+COCOAPODS: 1.7.5

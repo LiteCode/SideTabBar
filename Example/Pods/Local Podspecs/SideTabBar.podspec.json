@@ -1,0 +1,25 @@
+{
+  "name": "SideTabBar",
+  "version": "0.1.0",
+  "summary": "Side Tab Bar Controller looks like VSCode tab bar",
+  "description": "SideTabBar a simple library with native api, who replicate VSCode tab bar.",
+  "homepage": "https://github.com/spectraldragon/SideTabBar",
+  "license": {
+    "type": "MIT",
+    "file": "LICENSE"
+  },
+  "authors": {
+    "spectraldragon": "spectraldragonchannel@gmail.com"
+  },
+  "source": {
+    "git": "https://github.com/spectraldragon/SideTabBar.git",
+    "tag": "0.1.0"
+  },
+  "social_media_url": "https://twitter.com/mashiply",
+  "platforms": {
+    "ios": "13.0"
+  },
+  "swift_versions": "5.1",
+  "source_files": "Sources/SideTabBar/**/*",
+  "swift_version": "5.1"
+}

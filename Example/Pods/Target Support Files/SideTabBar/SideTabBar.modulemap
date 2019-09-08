@@ -1,0 +1,6 @@
+framework module SideTabBar {
+  umbrella header "SideTabBar-umbrella.h"
+
+  export *
+  module * { export * }
+}

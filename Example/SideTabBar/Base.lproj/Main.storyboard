@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="14865.1" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="bPO-XK-7ca">
+    <device id="retina4_7" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="14819.2"/>
+    </dependencies>
+    <scenes>
+        <!--Item 1-->
+        <scene sceneID="bf0-JJ-MZf">
+            <objects>
+                <viewController id="bPO-XK-7ca" customClass="CustomSideTabBarController" customModule="SideTabBar_Example" customModuleProvider="target" sceneMemberID="viewController">
+                    <tabBarItem key="tabBarItem" title="Item 1" id="tVI-Su-wfP"/>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="0Xe-VO-6Ov" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-617" y="-840"/>
+        </scene>
+    </scenes>
+</document>
