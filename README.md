@@ -9,6 +9,14 @@
 
 To run the example project, clone the repo, and run `pod install` from the Example directory first.
 
+### Mac version
+
+![Mac Hidden](https://github.com/SpectralDragon/SideTabBar/Previews/mac_hidden.png)
+![Mac All](https://github.com/SpectralDragon/SideTabBar/Previews/mac_all.png)
+![Mac Overlay](https://github.com/SpectralDragon/SideTabBar/Previews/mac_overlay.png)
+
+### iOS Version
+
 ## Requirements
 
 * iOS 13 and higher

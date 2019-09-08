@@ -29,9 +29,8 @@ class CustomSideTabBarController: SideTabBarController {
         self.setViewControllers([firstController1, secondController1], positioning: .bottom, animated: false)
         
         let mainController = TestViewController(tabBarItem: UITabBarItem(title: "Main screen", image: nil, tag: 5))
-        
-        mainController.view.backgroundColor = .white
         self.setContentViewController(UINavigationController(rootViewController: mainController))
+        mainController.view.backgroundColor = .white
     }
 
 }
