@@ -11,7 +11,7 @@ To run the example project, clone the repo, and run `pod install` from the Examp
 
 ### Mac version
 
-![Mac Hidden](https://github.com/SpectralDragon/SideTabBar/blob/master/Previews/mac_all.png)
+![Mac Hidden](https://github.com/SpectralDragon/SideTabBar/blob/master/Previews/mac_hidden.png)
 ![Mac All](https://github.com/SpectralDragon/SideTabBar/blob/master/Previews/mac_all.png)
 ![Mac Overlay](https://github.com/SpectralDragon/SideTabBar/blob/master/Previews/mac_overlay.png)
 
