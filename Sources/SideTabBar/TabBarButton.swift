@@ -51,7 +51,8 @@ class TabBarButton: UIControl {
         self.setup()
         self.addTarget(target, action: action, for: .touchUpInside)
 
-        self.image = item.image?.withRenderingMode(.alwaysTemplate).withAlignmentRectInsets(item.imageInsets)
+        let image = item.image ?? item.selectedImage
+        self.image = image?.withRenderingMode(.alwaysTemplate).withAlignmentRectInsets(item.imageInsets)
 
         self.tabBarItem = item
     }
