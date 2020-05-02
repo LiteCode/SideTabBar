@@ -48,13 +48,13 @@ class TabBarButton: UIControl {
         self.itemUnselectedTintColor = tabBar.unselectedItemTintColor ?? UIColor(white: 0.57, alpha: 1)
 
         super.init(frame: .zero)
-        self.setup()
         self.addTarget(target, action: action, for: .touchUpInside)
 
         let image = item.image ?? item.selectedImage
         self.image = image?.withRenderingMode(.alwaysTemplate).withAlignmentRectInsets(item.imageInsets)
 
         self.tabBarItem = item
+        self.setup()
     }
 
     private func setup() {
