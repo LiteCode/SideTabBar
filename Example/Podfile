@@ -1,12 +1,6 @@
 use_frameworks!
-platform :ios, '13.0'
+platform :ios, '13.4'
 
 target 'SideTabBar_Example' do
   pod 'SideTabBar', :path => '../'
-
-  target 'SideTabBar_Tests' do
-    inherit! :search_paths
-
-    
-  end
 end

@@ -76,7 +76,7 @@ open class SideTabBar: UIView {
     private weak var stackView: UIStackView!
     private weak var visualEffectView: UIVisualEffectView!
     
-    var visualEffect: UIVisualEffect = UIBlurEffect(style: .systemChromeMaterial) {
+    var visualEffect: UIVisualEffect? = UIBlurEffect(style: .systemChromeMaterial) {
         didSet {
             self.visualEffectView?.effect = self.visualEffect
         }
@@ -85,8 +85,6 @@ open class SideTabBar: UIView {
     private var topItemsStackView: UIStackView!
     private var bottomItemsStackView: UIStackView!
     private var verticalSeparatorView: UIView!
-    
-    var canDeselect = true
     
     private var _topItems: [UITabBarItem]?
     private var _bottomItems: [UITabBarItem]?
@@ -218,9 +216,7 @@ open class SideTabBar: UIView {
         self.delegate?.tabBar(self, didSelect: tabBarItem)
         
         if selectedButton === button {
-            if canDeselect {
-                self.selectedItem = nil
-            }
+            self.selectedItem = nil
         } else {
             self.selectedItem = button.tabBarItem
         }

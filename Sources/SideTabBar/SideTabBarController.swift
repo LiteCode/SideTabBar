@@ -136,10 +136,17 @@ open class SideTabBarController: UIViewController {
     }
     
     /// A visual effect what used by default for tab bar and primary view.
-    open var backgroundVisualEffect: UIVisualEffect = UIBlurEffect(style: .systemChromeMaterial) {
+    open var backgroundVisualEffect: UIVisualEffect? = UIBlurEffect(style: .systemChromeMaterial) {
         didSet {
             self.primaryContainerView?.effect = self.backgroundVisualEffect
             self.tabBar?.visualEffect = self.backgroundVisualEffect
+        }
+    }
+    
+    /// A background color used for primary view
+    open var primaryBackgroundColor: UIColor? {
+        didSet {
+            self.primaryContainerView?.backgroundColor = self.primaryBackgroundColor
         }
     }
     
@@ -316,7 +323,6 @@ open class SideTabBarController: UIViewController {
             self.additionalSafeAreaInsets.left = 0
             self.primaryRightConstraint.isActive = false
             self.setTabBarVisible(false, animated: false)
-            self.tabBar.canDeselect = true
             self.primaryWidthConstraint.constant = Constants.detailHiddenWidth
         } else {
             self.setTabBarVisible(true, animated: false)
@@ -326,10 +332,8 @@ open class SideTabBarController: UIViewController {
             
             switch displayMode {
             case .allVisible:
-                self.tabBar.canDeselect = false
                 self.primaryRightConstraint.isActive = true
             case .primaryHidden, .primaryOverlay, .primaryModal:
-                self.tabBar.canDeselect = true
                 self.primaryRightConstraint.isActive = false
             }
             
@@ -488,11 +492,13 @@ open class SideTabBarController: UIViewController {
             
             animator.addAnimations {
                 self.overlayView.dismiss()
+                self.selectedViewController?.view.alpha = 0
                 self.view.layoutIfNeeded()
             }
             
             animator.addCompletion { position in
                 if position == .end {
+                    self.selectedViewController?.view.alpha = 1
                     self.selectedViewController?.removeFromParentViewController()
                     self.selectedViewController = nil
                     self.displayMode = .primaryHidden
@@ -521,7 +527,6 @@ open class SideTabBarController: UIViewController {
             
             switch displayMode {
             case .allVisible:
-                self.tabBar.canDeselect = false
                 self.primaryRightConstraint.isActive = true
                 self.selectedViewController?.removeFromParentViewController()
                 self.addChildViewController(viewController, viewContainer: self.primaryContainerView.contentView)
@@ -535,7 +540,6 @@ open class SideTabBarController: UIViewController {
                 self.displayMode = .allVisible
                 self.primaryWidthConstraint.constant = self.primaryWidth
             case .primaryModal, .primaryOverlay, .primaryHidden:
-                self.tabBar.canDeselect = true
                 self.selectedViewController?.removeFromParentViewController()
                 self.addChildViewController(viewController, viewContainer: self.primaryContainerView.contentView)
                 self.view.layoutIfNeeded()

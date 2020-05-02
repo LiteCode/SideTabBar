@@ -28,7 +28,7 @@ public extension UIBlurEffect {
     }
     
     static func makeBlurThroughEffect(style: ThroughStyle) -> UIVisualEffect? {
-        return (NSClassFromString("_UIBlurThroughEffect") as? UIVisualEffect.Type)?.perform(Selector("_blurThroughWithStyle:"), with: style.rawValue)?.takeRetainedValue() as? UIVisualEffect
+        return (NSClassFromString("_UIBlurThroughEffect") as? UIVisualEffect.Type)?.perform(NSSelectorFromString("_blurThroughWithStyle:"), with: style.rawValue)?.takeRetainedValue() as? UIVisualEffect
     }
 }
 
@@ -46,8 +46,8 @@ extension UIViewController {
     
     func removeFromParentViewController() {
         self.willMove(toParent: nil)
-        self.removeFromParent()
         self.view.removeFromSuperview()
+        self.removeFromParent()
     }
     
     /// Adds a child view controller pinning it view to edges of viewContainer
